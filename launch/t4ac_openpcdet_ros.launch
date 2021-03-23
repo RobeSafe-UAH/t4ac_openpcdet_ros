@@ -1,0 +1,16 @@
+<launch>  
+    <arg name="t4ac_openpcdet_ros_node" value="/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node"/>
+    <arg name="t4ac_sensors_synchro_ros_node" value="/t4ac/perception/detection/sensor_fusion/t4ac_sensor_fusion_ros/t4ac_sensors_synchro_ros_node"/>
+    <group ns="$(arg t4ac_openpcdet_ros_node)">
+        <param name="openpcdet_path" type="string" value="/home/robesafe/libraries/OpenPCDet"/>
+        <param name="calib_file" type="string" value="/home/robesafe/models/pointpillars/calib_files/carla.txt"/>
+        <param name="config_path" type="string" value="/home/robesafe/models/pointpillars/pointpillars.yaml"/>
+        <param name="model_path" type="string" value="/home/robesafe/models/pointpillars/pointpillars.pth"/>
+        <param name="node_name" type="string" value="t4ac_openpcdet_ros_node"/>
+
+        <param name="pub_BEV_lidar_obstacles" type="string" value="$(arg t4ac_openpcdet_ros_node)/BEV_lidar_obstacles"/>
+        <param name="pub_3D_lidar_obstacles_markers" type="string" value="$(arg t4ac_openpcdet_ros_node)/3D_lidar_obstacles_markers"/>
+        <param name="sub_input_pointcloud" type="string" value="$(arg t4ac_sensors_synchro_ros_node)/synchronized_pointcloud"/>
+    </group> 
+    <node pkg="t4ac_openpcdet_ros" type="t4ac_openpcdet_ros_node.py" name="t4ac_openpcdet_ros_node" output="screen"/>
+</launch>
