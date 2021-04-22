@@ -16,7 +16,7 @@ Outputs: Most relevant obstacles of the environment in the form of 3D bounding b
 Note that each obstacle shows an unique ID in addition to its semantic information (person, car, ...), 
 in order to make easier the decision making processes.
 
-Executed via Python3.6 (python3.6 inference.py)
+Executed via Python3.8 (python3.8 inference.py)
 """
 
 # General use imports
@@ -32,7 +32,6 @@ from pathlib import Path
 # ROS imports
 import rospy
 import ros_numpy
-import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import PointCloud2, PointField, Image, CameraInfo
 from std_msgs.msg import Float64, Float32, Header, Bool
 from message_filters import TimeSynchronizer, Subscriber, ApproximateTimeSynchronizer
@@ -47,14 +46,15 @@ import torch
 from pyquaternion import Quaternion
 
 # OpenPCDet imports
+openpcdet_path = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/openpcdet_path")
+sys.path.insert(0,openpcdet_path)
 from pcdet.datasets import DatasetTemplate
 from pcdet.models import build_network, load_data_to_gpu
 from pcdet.config import cfg, cfg_from_yaml_file
 from pcdet.utils import box_utils, calibration_kitti, common_utils, object3d_kitti
 
 # Global variables
-calib_file = "/home/robesafe/t4ac_ws/src/t4ac_perception/detection/OpenPCDet-ROS/calib_files/carla.txt"
-cfg_root = "/home/robesafe/t4ac_ws/src/t4ac_perception/detection/libraries/OpenPCDet/tools/cfgs"
+calib_file = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/calib_file")
 
 move_lidar_center = 20 
 threshold = 0.5
@@ -138,7 +138,7 @@ def remove_low_score_nu(image_anno, thresh):
 
     return img_filtered_annotations
 
-def get_xyz_points(cloud_array, remove_nans=True, dtype=np.float):
+def get_xyz_points(cloud_array, remove_nans=True, dtype=float):
     """
     """
     if remove_nans:
@@ -426,8 +426,12 @@ class Processor_ROS:
         return scores, boxes_lidar, types, pred_dict
  
 if __name__ == "__main__":
-    config_path = os.path.join(cfg_root,"kitti_models/pointpillar.yaml")
-    model_path  = os.path.join(cfg_root,"kitti_models/pointpillar_7728.pth")
+
+    # config_path = os.path.join(cfg_root,"kitti_models/pointpillars.yaml")
+    # model_path  = os.path.join(cfg_root,"kitti_models/pointpillars.pth")
+
+    config_path = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/config_path")
+    model_path = rospy.get_param("t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/model_path")
 
     proc_1 = Processor_ROS(config_path, model_path)
     print("Config path: ", config_path)
@@ -441,23 +445,23 @@ if __name__ == "__main__":
     print("Calib.R0: ", calib.R0)
     print("Calib.T (Velo2Cam): ", calib.V2C)
     
-    rospy.init_node('object_3d_detector_node')
-    sub_lidar_topic = [ "/velodyne_points", 
-                        "/carla/ego_vehicle/lidar/lidar1/point_cloud",
-                        "/kitti_player/hdl64e", 
-                        "/lidar_protector/merged_cloud", 
-                        "/merged_cloud",
-                        "/lidar_top", 
-                        "/roi_pclouds",
-                        "/livox/lidar",
-                        "/SimOneSM_PointCloud_0"]
+    node_name = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/node_name")
+    rospy.init_node(node_name, anonymous=True)
 
     cfg_from_yaml_file(config_path, cfg)
     
-    sub_ = rospy.Subscriber(sub_lidar_topic[1], PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
+    # ROS publishers
 
-    pub_detected_obstacles = rospy.Publisher('/t4ac/perception/detection/bev_lidar_obstacles', BEV_detections_list, queue_size=5)
-    pub_rviz = rospy.Publisher('t4ac/perception/detection/3D_lidar_obstacles_markers', MarkerArray, queue_size=5)
-    
+    BEV_lidar_obstacles_topic = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_BEV_lidar_obstacles")
+    pub_detected_obstacles = rospy.Publisher(BEV_lidar_obstacles_topic, BEV_detections_list, queue_size=20)
+
+    lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_markers")
+    pub_rviz = rospy.Publisher(lidar_3D_obstacles_markers_topic, MarkerArray, queue_size=20)
+
+    # ROS subscriber
+
+    input_pointcloud_topic = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_pointcloud")
+    sub_input_pointcloud = rospy.Subscriber(input_pointcloud_topic, PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
+
     print("[+] PCDet ros_node has started.")    
     rospy.spin()
