@@ -1,4 +1,6 @@
 <launch>  
+    <arg name="simulation" default="false"/>
+    
     <arg name="t4ac_openpcdet_ros_node" value="/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node"/>
     <arg name="t4ac_sensors_synchro_ros_node" value="/t4ac/perception/detection/sensor_fusion/t4ac_sensor_fusion_ros/t4ac_sensors_synchro_ros_node"/>
     <group ns="$(arg t4ac_openpcdet_ros_node)">
@@ -10,7 +12,15 @@
 
         <param name="pub_BEV_lidar_obstacles" type="string" value="$(arg t4ac_openpcdet_ros_node)/BEV_lidar_obstacles"/>
         <param name="pub_3D_lidar_obstacles_markers" type="string" value="$(arg t4ac_openpcdet_ros_node)/3D_lidar_obstacles_markers"/>
-        <param name="sub_input_pointcloud" type="string" value="$(arg t4ac_sensors_synchro_ros_node)/synchronized_pointcloud"/>
+
+        <group if="$(eval simulation == true)">
+            <param name="sub_input_pointcloud" type="string" value="/carla/ego_vehicle/lidar/lidar1/point_cloud"/>
+        </group>
+        <group if="$(eval simulation == false)">
+            <!-- <param name="sub_input_image" type="string" value="/velodyne_points"/> -->
+            <param name="sub_input_pointcloud" type="string" value="$(arg t4ac_sensors_synchro_ros_node)/synchronized_pointcloud"/>
+        </group>
+        
     </group> 
     <node pkg="t4ac_openpcdet_ros" type="t4ac_openpcdet_ros_node.py" name="t4ac_openpcdet_ros_node" output="screen"/>
 </launch>
