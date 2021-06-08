@@ -18,9 +18,9 @@ import numpy as np
 from modules.demodataset import DemoDataset
 
 # Global variables
-calib_file = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/calib_file")
+calib_file = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/calib_file")
 
-class Processor_ROS:
+class Processor_ROS_Kitti:
     def __init__(self, config_path, model_path):
         self.points = None
         self.config_path = config_path
@@ -33,14 +33,14 @@ class Processor_ROS:
         
     def initialize(self):
         self.read_config()
-        
+
     def read_config(self):
         config_path = self.config_path
         cfg_from_yaml_file(self.config_path, cfg)
         self.logger = common_utils.create_logger()
         self.demo_dataset = DemoDataset(
             dataset_cfg=cfg.DATA_CONFIG, class_names=cfg.CLASS_NAMES, training=False,
-            root_path=Path("/home/muzi2045/Documents/project/OpenPCDet/data/kitti/velodyne/000001.bin"),
+            root_path=Path("/none"),
             ext='.bin')
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -91,9 +91,6 @@ class Processor_ROS:
         pred_dicts, _ = self.net.forward(data_dict)
         
         torch.cuda.synchronize()
-        # inference_time = time.time() - t
-        # inference_time_list.append(inference_time)
-        # mean_inference_time = sum(inference_time_list)/len(inference_time_list)
 
         boxes_lidar = pred_dicts[0]["pred_boxes"].detach().cpu().numpy()
         scores = pred_dicts[0]["pred_scores"].detach().cpu().numpy()

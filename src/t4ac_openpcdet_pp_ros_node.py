@@ -49,43 +49,17 @@ from pyquaternion import Quaternion
 
 # Auxiliar functions/classes imports
 from modules.auxiliar_functions import *
-from modules.processor_ros import Processor_ROS
+from modules.processor_ros_kitti import Processor_ROS_Kitti
 from modules.demodataset import DemoDataset
 
 # Global variables
-calib_file = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/calib_file")
+calib_file = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/calib_file")
 
 move_lidar_center = 20 
 threshold = 0.5
 
-inference_time_list = []
-
 display_rviz = True
 bev_camera = True
-
-def xyz_array_to_pointcloud2(points_sum, stamp=None, frame_id=None):
-    """
-    Create a sensor_msgs.PointCloud2 from an array of points.
-    """
-    msg = PointCloud2()
-    if stamp:
-        msg.header.stamp = stamp
-    if frame_id:
-        msg.header.frame_id = frame_id
-    msg.height = 1
-    msg.width = points_sum.shape[0]
-    msg.fields = [
-        PointField('x', 0, PointField.FLOAT32, 1),
-        PointField('y', 4, PointField.FLOAT32, 1),
-        PointField('z', 8, PointField.FLOAT32, 1)
-        # PointField('i', 12, PointField.FLOAT32, 1)
-        ]
-    msg.is_bigendian = False
-    msg.point_step = 12
-    msg.row_step = points_sum.shape[0]
-    msg.is_dense = int(np.isfinite(points_sum).all())
-    msg.data = np.asarray(points_sum, np.float32).tostring()
-    return msg
 
 def anno_to_bev_detections(dt_box_lidar, scores, types, msg):
     """
@@ -196,16 +170,16 @@ def rslidar_callback(msg):
         bev_detections_list.bev_detections_list.append([])
 
         pub_detected_obstacles.publish(bev_detections_list)
- 
+
 if __name__ == "__main__":
 
     # config_path = os.path.join(cfg_root,"kitti_models/pointpillars.yaml")
     # model_path  = os.path.join(cfg_root,"kitti_models/pointpillars.pth")
 
-    config_path = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/config_path")
-    model_path = rospy.get_param("t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/model_path")
+    config_path = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/config_path")
+    model_path = rospy.get_param("t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/model_path")
 
-    proc_1 = Processor_ROS(config_path, model_path)
+    proc_1 = Processor_ROS_Kitti(config_path, model_path)
     print("Config path: ", config_path)
     print("Model path: ", model_path)
     proc_1.initialize()
@@ -217,22 +191,22 @@ if __name__ == "__main__":
     print("Calib.R0: ", calib.R0)
     print("Calib.T (Velo2Cam): ", calib.V2C)
     
-    node_name = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/node_name")
+    node_name = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/node_name")
     rospy.init_node(node_name, anonymous=True)
 
     cfg_from_yaml_file(config_path, cfg)
     
     # ROS publishers
 
-    BEV_lidar_obstacles_topic = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/pub_BEV_lidar_obstacles")
+    BEV_lidar_obstacles_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_BEV_lidar_obstacles")
     pub_detected_obstacles = rospy.Publisher(BEV_lidar_obstacles_topic, BEV_detections_list, queue_size=20)
 
-    lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/pub_3D_lidar_obstacles_markers")
+    lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_markers")
     pub_rviz = rospy.Publisher(lidar_3D_obstacles_markers_topic, MarkerArray, queue_size=20)
 
     # ROS subscriber
 
-    input_pointcloud_topic = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/sub_input_pointcloud")
+    input_pointcloud_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_pointcloud")
     sub_input_pointcloud = rospy.Subscriber(input_pointcloud_topic, PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
 
     print("[+] PCDet ros_node has started.")    

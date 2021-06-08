@@ -85,4 +85,3 @@ def get_xyz_points(cloud_array, remove_nans=True, dtype=float):
     points[...,1] = cloud_array['y']
     points[...,2] = cloud_array['z']
     return points
-

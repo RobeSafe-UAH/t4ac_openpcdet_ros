@@ -5,7 +5,7 @@ import sys
 import rospy
 
 # OpenPCDet imports
-openpcdet_path = rospy.get_param("/t4ac/perception/detection/t4ac_openpcdet_ros/t4ac_openpcdet_pp_ros_node/openpcdet_path")
+openpcdet_path = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/openpcdet_path")
 sys.path.insert(0,openpcdet_path)
 from pcdet.datasets import DatasetTemplate
 
