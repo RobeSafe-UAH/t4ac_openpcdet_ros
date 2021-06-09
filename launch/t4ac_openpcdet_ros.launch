@@ -1,5 +1,6 @@
 <launch>  
     <arg name="simulation" default="false"/>
+    <arg name="lidar_camera_fusion" default="false"/>
     <arg name="multihead" default="false"/>
     
     <arg name="t4ac_openpcdet_ros_node" value="/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node"/>
@@ -27,10 +28,11 @@
             <param name="sub_input_odometry" type="string" value="/carla/ego_vehicle/odometry"/>
         </group>
         <group if="$(eval simulation == false)">
-            <param name="sub_input_pointcloud" type="string" value="/velodyne_points"/>
-            <!-- <param name="sub_input_pointcloud" type="string" value="$(arg t4ac_sensors_synchro_ros_node)/synchronized_pointcloud"/> -->
+            <param name="sub_input_pointcloud" type="string" value="$(arg t4ac_sensors_synchro_ros_node)/synchronized_pointcloud"/>
+            <group if="$(eval lidar_camera_fusion == false)">
+                <param name="sub_input_pointcloud" type="string" value="/velodyne_points"/>
+            </group>
         </group>
-        
     </group>
 
     <group if="$(eval multihead == true)">
