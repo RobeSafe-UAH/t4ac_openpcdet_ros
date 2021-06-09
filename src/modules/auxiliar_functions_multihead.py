@@ -89,9 +89,9 @@ def calculate_iou(box_1, box_2):
 
 def filter_predictions(pred_dicts, simulation):
     
-    confidence_threshold = [0.3, 0.45, 0.45, # car, truck, construction_vehicle
-                            0.5, 0.45, 0.4, # bus, trailer, barrier
-                            0.2, 0.15, 0, 0] #motorcycle, bicycle, pedestrian, traffic_cone
+    confidence_threshold = [0.35, 0.5, 0.45, # car, truck, construction_vehicle
+                            0.5, 0.45, 0.5, # bus, trailer, barrier
+                            0.3, 0.2, 0.05, 0.05] #motorcycle, bicycle, pedestrian, traffic_cone
 
     pred_boxes, pred_scores, pred_labels = (pred_dicts[0]['pred_boxes'].cpu().detach().numpy(),
                                             pred_dicts[0]['pred_scores'].cpu().detach().numpy(),
