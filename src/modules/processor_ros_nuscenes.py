@@ -27,6 +27,7 @@ class Processor_ROS_nuScenes:
         self.model_path = model_path
         self.model = None
         self.demo_dataset = None
+        self.actual_time = 0
         self.odometry = None
 
     def initilize_network(self):
@@ -70,6 +71,7 @@ class Processor_ROS_nuScenes:
         msg_cloud = self.__remove_ego_points(msg_cloud)
         pcl = self.__get_xyzi_points(msg_cloud)
         timestap = msg.header.stamp.secs + msg.header.stamp.nsecs/1000000000 # Time in seconds
+        self.actual_time = timestap
         if(self.pcl_queue.full()):
             self.pcl_queue.get()
         self.pcl_queue.put((timestap, pcl))
@@ -77,19 +79,16 @@ class Processor_ROS_nuScenes:
     def __get_pcl_sweeps(self):
 
         sweeps = self.pcl_queue.qsize()
-        complete_pcl = None
-        initial_time = -1
+        complete_pcl = []
         for _ in range(sweeps):
             pcl_elem = self.pcl_queue.get()
-            if(initial_time == -1):
-                initial_time = pcl_elem[0]
-                pcl = pcl_elem[1]
-                complete_pcl = pcl
-            else:
-                time_difference = pcl_elem[0] - initial_time
-                pcl = pcl_elem[1]
-                pcl[:,4] = time_difference
+            time_difference = self.actual_time - pcl_elem[0]
+            pcl = pcl_elem[1]
+            pcl[:,4] = time_difference
+            if complete_pcl != []:
                 complete_pcl = np.concatenate((complete_pcl, pcl))
+            else:
+                complete_pcl = pcl
             self.pcl_queue.put(pcl_elem)
         return complete_pcl
 
