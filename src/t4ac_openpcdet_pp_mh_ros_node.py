@@ -30,7 +30,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64, Float32, Header, Bool
 from message_filters import TimeSynchronizer, Subscriber, ApproximateTimeSynchronizer
 from visualization_msgs.msg import MarkerArray
-from t4ac_msgs.msg import BEV_detection, BEV_detections_list
+from t4ac_msgs.msg import Bounding_Box_3D, Bounding_Box_3D_list
 
 # Math and geometry imports
 import torch
@@ -39,75 +39,132 @@ import numpy as np
 from pyquaternion import Quaternion
 
 # Auxiliar functions/classes imports
-from modules.auxiliar_functions_multihead import marker_bb, marker_arrow, filter_predictions, relative2absolute_velocity
+from modules.auxiliar_functions_multihead import get_bounding_box_3d, marker_bb, marker_arrow, filter_predictions, relative2absolute_velocity
 from modules.processor_ros_nuscenes import Processor_ROS_nuScenes
 
-def display_rviz(msg, boxes, scores, labels):
+# Config PointCloud processor
 
-    marker_array = MarkerArray()
-    i = 0
+CONFIG_PATH = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/config_path")
+MODEL_PATH = rospy.get_param("t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/model_path")
 
-    for box, score, label in zip(boxes, scores, labels):
-        box_marker = marker_bb(msg, box, score, label, i)
-        marker_array.markers.append(box_marker)
-        i += 1
+class OpenPCDet_ROS():
+    """
+    """
+    def __init__(self):
 
-        arrow_marker = marker_arrow(msg, box, score, label, i)
-        marker_array.markers.append(arrow_marker)
-        i += 1
+        # PointCloud processor
 
-    pub_rviz.publish(marker_array)
+        self.processor = Processor_ROS_nuScenes(config_path, model_path)
+        self.processor.initilize_network()
 
-def ros_odometry_callback(msg):
-    
-    processor.odometry = msg
+        # ROS Subscribers
 
-def ros_lidar_callback(msg):
+        input_odometry_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_odometry")
+        self.sub_input_odometry = rospy.Subscriber(input_odometry_topic, Odometry, ros_odometry_callback, queue_size=1)
 
-    processor.new_pcl(msg)
-    pred_dicts = processor.inference()
+        input_pointcloud_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_pointcloud")
+        self.sub_input_pointcloud = rospy.Subscriber(input_pointcloud_topic, PointCloud2, ros_lidar_callback, queue_size=1, buff_size=2**24)
 
-    pred_boxes, pred_scores, pred_labels = filter_predictions(pred_dicts, True)
-    
-    if processor.odometry != None and len(pred_boxes) != 0:
-        pred_boxes = relative2absolute_velocity(pred_boxes, processor.odometry)
+        # ROS Publishers
 
-    # print(pred_boxes)
-    # print(pred_scores)
-    # print(pred_labels)
+        # pub_pcl2 = rospy.Publisher("/carla/ego_vehicle/pcl2_used", PointCloud2, queue_size=20)
+        lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_markers")
+        self.pub_lidar_3D_obstacles_markers = rospy.Publisher(lidar_3D_obstacles_markers_topic, MarkerArray, queue_size=10)
 
-    display_rviz(msg, pred_boxes, pred_scores, pred_labels)
+        lidar_3D_obstacles_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles")
+        self.pub_lidar_3D_obstacles = rospy.Publisher(lidar_3D_obstacles_topic, Bounding_Box_3D_list, queue_size=10)
 
-if __name__ == "__main__":
+        self.laser_frame = rospy.get_param('/t4ac/frames/laser')
+        self.header = None
 
-    last_msg_odometry = None
+    # Aux Functions
 
-    config_path = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/config_path")
-    model_path = rospy.get_param("t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/model_path")
+    def publish_obstacles(self, boxes, scores, labels):
+        """
+        """
 
-    processor = Processor_ROS_nuScenes(config_path, model_path)
-    processor.initilize_network()
-    
+        bounding_box_3d_list = Bounding_Box_3D_list()
+        bounding_box_3d_list.header.stamp = self.header.stamp
+        bounding_box_3d_list.header.frame_id = self.header.frame_id
+
+        marker_array = MarkerArray()
+        i = 0
+
+        for box, score, label in zip(boxes, scores, labels):
+            box_marker = marker_bb(self.header, box, score, label, i)
+            marker_array.markers.append(box_marker)
+            i += 1
+
+            arrow_marker = marker_arrow(self.header, box, score, label, i)
+            marker_array.markers.append(arrow_marker)
+            i += 1
+
+            bounding_box_3d = get_bounding_box_3d(box,score,label)
+            bounding_box_3d_list.bounding_box_3d_list.append(bounding_box_3d)
+
+        self.pub_lidar_3D_obstacles.publish(bounding_box_3d_list)
+        self.pub_lidar_3D_obstacles_markers.publish(marker_array)
+
+    # ROS callbacks
+
+    def ros_odometry_callback(self,odom_msg):
+        """
+        """
+        self.processor.odometry = msg
+
+    def ros_lidar_callback(self,point_cloud_msg):
+        """
+        """
+
+        self.header = point_cloud_msg.header
+
+        self.processor.new_pcl(point_cloud_msg)
+        pred_dicts = processor.inference()
+
+        pred_boxes, pred_scores, pred_labels = filter_predictions(pred_dicts, True)
+        
+        if processor.odometry != None and len(pred_boxes) != 0:
+            pred_boxes = relative2absolute_velocity(pred_boxes, processor.odometry)
+
+        # print(pred_boxes)
+        # print(pred_scores)
+        # print(pred_labels)
+
+        self.publish_obstacles(pred_boxes, pred_scores, pred_labels)
+        bounding_box_3d
+
+def main():
+    # Node name
+
     node_name = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/node_name")
     rospy.init_node(node_name, anonymous=True)
     
-    # ROS publishers
+    OpenPCDet_ROS()
 
-    # BEV_lidar_obstacles_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_BEV_lidar_obstacles")
-    # pub_detected_obstacles = rospy.Publisher(BEV_lidar_obstacles_topic, BEV_detections_list, queue_size=20)
+    try:
+        rospy.spin()
+    except KeyboardInterruput:
+        rospy.loginfo("Shutting down OpenPCDet ROS module")
 
-    lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_markers")
-    pub_rviz = rospy.Publisher(lidar_3D_obstacles_markers_topic, MarkerArray, queue_size=3)
-
-    # pub_pcl2 = rospy.Publisher("/carla/ego_vehicle/pcl2_used", PointCloud2, queue_size=20)
-
-    # ROS subscriber
-
-    input_odometry_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_odometry")
-    sub_input_odometry = rospy.Subscriber(input_odometry_topic, Odometry, ros_odometry_callback, queue_size=1)
-
-    input_pointcloud_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_pointcloud")
-    sub_input_pointcloud = rospy.Subscriber(input_pointcloud_topic, PointCloud2, ros_lidar_callback, queue_size=1, buff_size=2**24)
-
+if __name__ == '__main__':
     print("[+] PCDet ros_node has started.")    
-    rospy.spin()
+    main()
+
+
+
+
+
+
+
+    
+
+    
+
+    
+
+
+    
+
+    
+
+    

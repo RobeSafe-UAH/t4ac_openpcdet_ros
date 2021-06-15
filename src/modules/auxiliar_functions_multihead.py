@@ -6,6 +6,7 @@ import rospy
 # ROS imports
 import rospy
 from visualization_msgs.msg import Marker
+from t4ac_msgs.msg import Bounding_Box_3D
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2, PointField
 import std_msgs.msg
@@ -19,15 +20,42 @@ import torchvision.ops.boxes as bops
 # Auxiliar functions/classes imports
 from modules.auxiliar_functions import yaw2quaternion
 
-def marker_bb(msg, box, score, label, id_marker):
+# Classes
+
+classes = ("Car",
+           "Truck",
+           "Construction_Vehicle",
+           "Bus",
+           "Trailer",
+           "Barrier",
+           "Motorcycle",
+           "Bicycle"
+           "Pedestrian",
+           "Traffic_Cone")
+
+def get_bounding_box_3d(box, score, label):
+    bounding_box_3d = Bounding_Box_3D()
+
+    bounding_box_3d.type = classes[label-1]
+    bounding_box_3d.score = score
+
+    bounding_box_3d.pose.position.x = box[0]
+    bounding_box_3d.pose.position.y = box[1]
+    bounding_box_3d.pose.position.z = box[2]
+
+    # TODO: Velocity value? Here the local velocity!!!! (We will compensate with ego-motion in the trackin module)
+
+    return bounding_box_3d
+
+def marker_bb(header, box, score, label, id_marker):
 
     colors_label = [(0,0,255), (255,255,0), (128,0,0), # car(blue), truck(yellow), construction_vehicle(maroon)
                     (0,128,128), (0,128,0), (0,255,255), # bus(teal), trailer(green), barrier(cyan)
                     (0,255,0), (128,128,128), (255,0,255), (128,0,128)] #motorcycle(lime), bicycle(grey), pedestrian(magenta), traffic_cone(purple)
 
     box_marker = Marker()
-    box_marker.header.stamp = msg.header.stamp
-    box_marker.header.frame_id = msg.header.frame_id
+    box_marker.header.stamp = header.stamp
+    box_marker.header.frame_id = header.frame_id
     box_marker.type = Marker.CUBE
     box_marker.id = id_marker
     box_marker.lifetime = rospy.Duration.from_sec(1)
@@ -47,11 +75,11 @@ def marker_bb(msg, box, score, label, id_marker):
 
     return box_marker
 
-def marker_arrow(msg, box, score, label, id_marker):
+def marker_arrow(header, box, score, label, id_marker):
 
     arrow_marker = Marker()
-    arrow_marker.header.stamp = msg.header.stamp
-    arrow_marker.header.frame_id = msg.header.frame_id
+    arrow_marker.header.stamp = header.stamp
+    arrow_marker.header.frame_id = header.frame_id
     arrow_marker.type = Marker.ARROW
     arrow_marker.id = id_marker
     arrow_marker.lifetime = rospy.Duration.from_sec(1)

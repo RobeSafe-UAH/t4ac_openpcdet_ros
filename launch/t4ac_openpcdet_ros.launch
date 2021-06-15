@@ -20,7 +20,7 @@
         
         <param name="node_name" type="string" value="t4ac_openpcdet_ros_node"/>
 
-        <param name="pub_BEV_lidar_obstacles" type="string" value="$(arg t4ac_openpcdet_ros_node)/BEV_lidar_obstacles"/>
+        <param name="pub_3D_lidar_obstacles" type="string" value="$(arg t4ac_openpcdet_ros_node)/3D_lidar_obstacles"/>
         <param name="pub_3D_lidar_obstacles_markers" type="string" value="$(arg t4ac_openpcdet_ros_node)/3D_lidar_obstacles_markers"/>
 
         <param name="sub_input_odometry" type="string" value="/t4ac/localization/pose"/>
