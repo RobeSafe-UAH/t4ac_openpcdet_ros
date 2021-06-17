@@ -40,6 +40,7 @@ from pyquaternion import Quaternion
 
 # Auxiliar functions/classes imports
 from modules.auxiliar_functions_multihead import get_bounding_box_3d, marker_bb, marker_arrow, filter_predictions, relative2absolute_velocity
+from modules.auxiliar_functions import euler_from_quaternion
 from modules.processor_ros_nuscenes import Processor_ROS_nuScenes
 
 # Config PointCloud processor
@@ -110,7 +111,33 @@ class OpenPCDet_ROS():
     def ros_odometry_callback(self,odom_msg):
         """
         """
-        self.processor.odometry = odom_msg
+        quaternion = []
+        quaternion.append(odom_msg.pose.pose.orientation.x)
+        quaternion.append(odom_msg.pose.pose.orientation.y)
+        quaternion.append(odom_msg.pose.pose.orientation.z)
+        quaternion.append(odom_msg.pose.pose.orientation.w)
+        _,_,self.ego_vehicle_yaw = euler_from_quaternion(*quaternion)
+        
+        if not self.processor.odom_flag:
+            self.processor.previous_ego_odometry = odom_msg
+            self.processor.odom_flag = True
+        else:
+            self.processor.current_ego_odometry = odom_msg
+
+            delta_t = self.processor.current_ego_odometry.header.stamp.to_sec() - self.processor.previous_ego_odometry.header.stamp.to_sec()
+            
+            desp_x_global = self.processor.current_ego_odometry.pose.pose.position.x - self.processor.previous_ego_odometry.pose.pose.position.x
+            desp_y_global = self.processor.current_ego_odometry.pose.pose.position.y - self.processor.previous_ego_odometry.pose.pose.position.y
+            self.ego_vel_x_global = desp_x_global/delta_t
+            self.vel_y_global = desp_y_global/delta_t
+
+            desp_x_local = desp_x_global*math.cos(self.ego_vehicle_yaw)+desp_y_global*math.sin(self.ego_vehicle_yaw)
+            desp_y_local = desp_x_global*(-math.sin(self.ego_vehicle_yaw))+desp_y_global*math.cos(self.ego_vehicle_yaw)
+
+            self.ego_vel_x_local = desp_x_local/delta_t
+            self.ego_vel_y_local = desp_y_local/delta_t
+
+            self.processor.previous_ego_odometry = self.processor.current_ego_odometry
 
     def ros_lidar_callback(self,point_cloud_msg):
         """
@@ -123,8 +150,8 @@ class OpenPCDet_ROS():
 
         pred_boxes, pred_scores, pred_labels = filter_predictions(pred_dicts, True)
         
-        if self.processor.odometry != None and len(pred_boxes) != 0:
-            pred_boxes = relative2absolute_velocity(pred_boxes, self.processor.odometry)
+        if self.processor.current_ego_odometry != None and len(pred_boxes) != 0:
+            pred_boxes = relative2absolute_velocity(pred_boxes, self.ego_vel_x_local, self.ego_vel_y_local)
 
         # print(pred_boxes)
         # print(pred_scores)
