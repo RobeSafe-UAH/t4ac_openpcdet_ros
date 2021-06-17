@@ -110,7 +110,7 @@ class OpenPCDet_ROS():
     def ros_odometry_callback(self,odom_msg):
         """
         """
-        self.processor.odometry = msg
+        self.processor.odometry = odom_msg
 
     def ros_lidar_callback(self,point_cloud_msg):
         """
@@ -119,12 +119,12 @@ class OpenPCDet_ROS():
         self.header = point_cloud_msg.header
 
         self.processor.new_pcl(point_cloud_msg)
-        pred_dicts = processor.inference()
+        pred_dicts = self.processor.inference()
 
         pred_boxes, pred_scores, pred_labels = filter_predictions(pred_dicts, True)
         
-        if processor.odometry != None and len(pred_boxes) != 0:
-            pred_boxes = relative2absolute_velocity(pred_boxes, processor.odometry)
+        if self.processor.odometry != None and len(pred_boxes) != 0:
+            pred_boxes = relative2absolute_velocity(pred_boxes, self.processor.odometry)
 
         # print(pred_boxes)
         # print(pred_scores)
