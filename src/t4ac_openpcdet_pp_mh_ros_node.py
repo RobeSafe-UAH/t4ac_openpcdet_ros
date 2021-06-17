@@ -54,16 +54,16 @@ class OpenPCDet_ROS():
 
         # PointCloud processor
 
-        self.processor = Processor_ROS_nuScenes(config_path, model_path)
+        self.processor = Processor_ROS_nuScenes(CONFIG_PATH, MODEL_PATH)
         self.processor.initilize_network()
 
         # ROS Subscribers
 
         input_odometry_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_odometry")
-        self.sub_input_odometry = rospy.Subscriber(input_odometry_topic, Odometry, ros_odometry_callback, queue_size=1)
+        self.sub_input_odometry = rospy.Subscriber(input_odometry_topic, Odometry, self.ros_odometry_callback, queue_size=1)
 
         input_pointcloud_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/sub_input_pointcloud")
-        self.sub_input_pointcloud = rospy.Subscriber(input_pointcloud_topic, PointCloud2, ros_lidar_callback, queue_size=1, buff_size=2**24)
+        self.sub_input_pointcloud = rospy.Subscriber(input_pointcloud_topic, PointCloud2, self.ros_lidar_callback, queue_size=1, buff_size=2**24)
 
         # ROS Publishers
 
