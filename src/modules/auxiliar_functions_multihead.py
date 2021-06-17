@@ -22,28 +22,29 @@ from modules.auxiliar_functions import yaw2quaternion
 
 # Classes
 
-classes = ("Car",
+classes = ["Car",
            "Truck",
            "Construction_Vehicle",
            "Bus",
            "Trailer",
            "Barrier",
            "Motorcycle",
-           "Bicycle"
+           "Bicycle",
            "Pedestrian",
-           "Traffic_Cone")
+           "Traffic_Cone"]
 
 def get_bounding_box_3d(box, score, label):
+
     bounding_box_3d = Bounding_Box_3D()
 
     bounding_box_3d.type = classes[label-1]
     bounding_box_3d.score = score
 
-    bounding_box_3d.pose.position.x = box[0]
-    bounding_box_3d.pose.position.y = box[1]
-    bounding_box_3d.pose.position.z = box[2]
+    bounding_box_3d.pose.pose.position.x = box[0]
+    bounding_box_3d.pose.pose.position.y = box[1]
+    bounding_box_3d.pose.pose.position.z = box[2]
 
-    # TODO: Velocity value? Here the local velocity!!!! (We will compensate with ego-motion in the trackin module)
+    # TODO: Velocity value? Here the local velocity!!!! (We will compensate with ego-motion in the tracking module)
 
     return bounding_box_3d
 
@@ -155,8 +156,8 @@ def filter_predictions(pred_dicts, simulation):
 
 def relative2absolute_velocity(pred_boxes, msg_odometry):
 
-    pred_boxes[:,7] += msg_odometry.twist.twist.linear.x * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6])
-    pred_boxes[:,8] += - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6])
+    pred_boxes[:,7] += msg_odometry.twist.twist.linear.x #* np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6])
+    pred_boxes[:,8] += msg_odometry.twist.twist.linear.y #* np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6])
 
     return pred_boxes
 

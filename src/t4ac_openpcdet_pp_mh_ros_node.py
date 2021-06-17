@@ -131,7 +131,6 @@ class OpenPCDet_ROS():
         # print(pred_labels)
 
         self.publish_obstacles(pred_boxes, pred_scores, pred_labels)
-        bounding_box_3d
 
 def main():
     # Node name

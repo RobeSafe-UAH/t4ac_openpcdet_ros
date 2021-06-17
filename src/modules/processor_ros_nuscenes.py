@@ -28,7 +28,6 @@ class Processor_ROS_nuScenes:
         self.model = None
         self.demo_dataset = None
         self.actual_time = 0
-        self.odometry = None
 
     def initilize_network(self):
 
