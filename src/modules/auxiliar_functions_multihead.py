@@ -101,8 +101,8 @@ def marker_arrow(header, box, score, label, id_marker):
     p0.x = box[0]
     p0.y = box[1]
     p0.z = box[2]
-    p1.x = box[0]-box[7]
-    p1.y = box[1]-box[8]
+    p1.x = box[0]+box[7]
+    p1.y = box[1]+box[8]
     p1.z = box[2]
     arrow_marker.points = [p0, p1]
 
@@ -156,8 +156,11 @@ def filter_predictions(pred_dicts, simulation):
 
 def relative2absolute_velocity(pred_boxes, msg_odometry):
 
-    pred_boxes[:,7] += msg_odometry.twist.twist.linear.x #* np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6])
-    pred_boxes[:,8] += msg_odometry.twist.twist.linear.y #* np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6])
+    # pred_boxes[:,7] += msg_odometry.twist.twist.linear.x * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6])
+    # pred_boxes[:,8] += msg_odometry.twist.twist.linear.y #* np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6])
+    pred_boxes[:,7] += msg_odometry.twist.twist.linear.x
+    # pred_boxes[:,7] += msg_odometry.twist.twist.linear.y
+    print(pred_boxes[:,7])
 
     return pred_boxes
 
