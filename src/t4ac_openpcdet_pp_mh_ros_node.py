@@ -39,7 +39,7 @@ import numpy as np
 from pyquaternion import Quaternion
 
 # Auxiliar functions/classes imports
-from modules.auxiliar_functions_multihead import get_bounding_box_3d, marker_bb, marker_arrow, filter_predictions, relative2absolute_velocity
+from modules.auxiliar_functions_multihead import get_bounding_box_3d, new_marker_bb, marker_bb, marker_arrow, filter_predictions, relative2absolute_velocity
 from modules.auxiliar_functions import euler_from_quaternion
 from modules.processor_ros_nuscenes import Processor_ROS_nuScenes
 
@@ -69,11 +69,12 @@ class OpenPCDet_ROS():
         # ROS Publishers
 
         # pub_pcl2 = rospy.Publisher("/carla/ego_vehicle/pcl2_used", PointCloud2, queue_size=20)
-        lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_markers")
-        self.pub_lidar_3D_obstacles_markers = rospy.Publisher(lidar_3D_obstacles_markers_topic, MarkerArray, queue_size=10)
-
+        
         lidar_3D_obstacles_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles")
         self.pub_lidar_3D_obstacles = rospy.Publisher(lidar_3D_obstacles_topic, Bounding_Box_3D_list, queue_size=10)
+
+        lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_markers")
+        self.pub_lidar_3D_obstacles_markers = rospy.Publisher(lidar_3D_obstacles_markers_topic, MarkerArray, queue_size=10)
 
         self.laser_frame = rospy.get_param('/t4ac/frames/laser')
         self.header = None
@@ -92,7 +93,8 @@ class OpenPCDet_ROS():
         i = 0
 
         for box, score, label in zip(boxes, scores, labels):
-            box_marker = marker_bb(self.header, box, score, label, i)
+            box_marker = new_marker_bb(self.header, box, score, label, i)
+            # box_marker = marker_bb(self.header, box, score, label, i)
             marker_array.markers.append(box_marker)
             i += 1
 
@@ -151,7 +153,8 @@ class OpenPCDet_ROS():
         pred_boxes, pred_scores, pred_labels = filter_predictions(pred_dicts, True)
         
         if self.processor.current_ego_odometry != None and len(pred_boxes) != 0:
-            pred_boxes = relative2absolute_velocity(pred_boxes, self.ego_vel_x_local, self.ego_vel_y_local)
+            # pred_boxes = relative2absolute_velocity(pred_boxes, self.ego_vel_x_local, self.ego_vel_y_local)
+            pred_boxes = relative2absolute_velocity(pred_boxes, self.processor.current_ego_odometry)
 
         # print(pred_boxes)
         # print(pred_scores)

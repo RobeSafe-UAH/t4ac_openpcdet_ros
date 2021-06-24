@@ -2,6 +2,7 @@
 from pyquaternion import Quaternion
 import math
 import numpy as np
+from t4ac_msgs.msg import Node
 
 def euler_from_quaternion(x, y, z, w):
     """
@@ -30,9 +31,55 @@ def yaw2quaternion(yaw: float) -> Quaternion:
     """
     return Quaternion(axis=[0,0,1], radians=yaw)
 
+def calculate_3d_corners(bbox):
+    """
+    Get 3D bounding box corners
+
+    bbox[0,1,2] -> LiDAR centroid
+    bbox[3,4,5] -> l,w,h
+    bbox[6]     -> yaw
+    bbox[7,8]   -> vx,vy (global)
+
+    Regarding the corners, from 0-3 lower, from 4-7 upper, 8 is the centroid (bbox[0,1,2])
+        6 -------- 7
+       /|         /|
+      4 -------- 5 .
+      | |    8   | |
+      . 2 -------- 3
+      |/         |/
+      0 -------- 1
+    """
+
+
+    x,y,z = bbox[0:3]
+    l,w,h = bbox[3:6]
+    yaw = bbox[6]
+
+    x_corners = [-l/2,-l/2, l/2, l/2,-l/2,-l/2,l/2, l/2] 
+    y_corners = [ w/2,-w/2, w/2,-w/2, w/2,-w/2,w/2,-w/2]
+    z_corners = [-h/2,-h/2,-h/2,-h/2, h/2, h/2,h/2, h/2]
+
+    if yaw > np.pi:
+        yaw -= np.pi
+    R = rotz(yaw)
+
+    corners_3d = np.dot(R, np.vstack([x_corners,y_corners,z_corners]))
+    corners_3d = corners_3d + np.vstack([x, y, z])
+
+    corners_3d_list = []
+
+    for i in range(corners_3d.shape[1]):
+        node = Node()
+        node.x = corners_3d[0,i]
+        node.y = corners_3d[1,i]
+        node.z = corners_3d[2,i]
+        corners_3d_list.append(node)
+
+    return corners_3d_list
+
 def rotz(t):
     """
-    Rotation around 
+    Rotation around z-axis
     """
     c = np.cos(t)
     s = np.sin(t)
