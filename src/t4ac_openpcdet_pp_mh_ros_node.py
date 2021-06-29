@@ -29,7 +29,7 @@ from sensor_msgs.msg import PointCloud2, PointField, Image, CameraInfo
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64, Float32, Header, Bool
 from message_filters import TimeSynchronizer, Subscriber, ApproximateTimeSynchronizer
-from visualization_msgs.msg import MarkerArray
+from visualization_msgs.msg import Marker, MarkerArray
 from t4ac_msgs.msg import Bounding_Box_3D, Bounding_Box_3D_list
 
 # Math and geometry imports
@@ -39,7 +39,7 @@ import numpy as np
 from pyquaternion import Quaternion
 
 # Auxiliar functions/classes imports
-from modules.auxiliar_functions_multihead import get_bounding_box_3d, new_marker_bb, marker_bb, marker_arrow, filter_predictions, relative2absolute_velocity
+from modules.auxiliar_functions_multihead import get_bounding_box_3d, marker_bb, marker_arrow, filter_predictions, relative2absolute_velocity
 from modules.auxiliar_functions import euler_from_quaternion
 from modules.processor_ros_nuscenes import Processor_ROS_nuScenes
 
@@ -76,6 +76,9 @@ class OpenPCDet_ROS():
         lidar_3D_obstacles_markers_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_markers")
         self.pub_lidar_3D_obstacles_markers = rospy.Publisher(lidar_3D_obstacles_markers_topic, MarkerArray, queue_size=10)
 
+        lidar_3D_obstacles_velocities_markers_topic = rospy.get_param("/t4ac/perception/detection/lidar/t4ac_openpcdet_ros/t4ac_openpcdet_ros_node/pub_3D_lidar_obstacles_velocities_markers")
+        self.pub_lidar_3D_obstacles_velocities_markers = rospy.Publisher(lidar_3D_obstacles_velocities_markers_topic, MarkerArray, queue_size=10)
+
         self.laser_frame = rospy.get_param('/t4ac/frames/laser')
         self.header = None
 
@@ -89,30 +92,33 @@ class OpenPCDet_ROS():
         bounding_box_3d_list.header.stamp = self.header.stamp
         bounding_box_3d_list.header.frame_id = self.header.frame_id
 
-        marker_array = MarkerArray()
-        i = 0
+        obstacles_marker_array = MarkerArray()
+        velocities_marker_array = MarkerArray()
+        i = j = 0
 
         for box, score, label in zip(boxes, scores, labels):
-            box_marker = new_marker_bb(self.header, box, score, label, i)
-            # box_marker = marker_bb(self.header, box, score, label, i)
-            marker_array.markers.append(box_marker)
+ 
+            box_marker = marker_bb(self.header,box,label,i,corners=False)
+            obstacles_marker_array.markers.append(box_marker)
             i += 1
 
-            arrow_marker = marker_arrow(self.header, box, score, label, i)
-            marker_array.markers.append(arrow_marker)
-            i += 1
+            arrow_marker = marker_arrow(self.header,box,label,j)
+            velocities_marker_array.markers.append(arrow_marker)
+            j += 1
 
             bounding_box_3d = get_bounding_box_3d(box,score,label)
             bounding_box_3d_list.bounding_box_3d_list.append(bounding_box_3d)
 
         self.pub_lidar_3D_obstacles.publish(bounding_box_3d_list)
-        self.pub_lidar_3D_obstacles_markers.publish(marker_array)
+        self.pub_lidar_3D_obstacles_markers.publish(obstacles_marker_array)
+        self.pub_lidar_3D_obstacles_velocities_markers.publish(velocities_marker_array)
 
     # ROS callbacks
 
     def ros_odometry_callback(self,odom_msg):
         """
         """
+
         quaternion = []
         quaternion.append(odom_msg.pose.pose.orientation.x)
         quaternion.append(odom_msg.pose.pose.orientation.y)

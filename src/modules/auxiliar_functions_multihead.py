@@ -1,9 +1,11 @@
 # General imports
+
 import struct
 import ctypes
 import rospy
 
 # ROS imports
+
 import rospy
 from visualization_msgs.msg import Marker
 from t4ac_msgs.msg import Bounding_Box_3D, Node
@@ -12,15 +14,17 @@ from sensor_msgs.msg import PointCloud2, PointField
 import std_msgs.msg
 
 # Math and geometry imports
+
 import math
 import torch
 import numpy as np
 import torchvision.ops.boxes as bops
 
 # Auxiliar functions/classes imports
+
 from modules.auxiliar_functions import yaw2quaternion, calculate_3d_corners
 
-# Classes
+# Object types
 
 classes = ["Car",
            "Truck",
@@ -44,14 +48,26 @@ def get_bounding_box_3d(box, score, label):
     bounding_box_3d.pose.pose.position.y = box[1]
     bounding_box_3d.pose.pose.position.z = box[2]
 
+    q = yaw2quaternion(box[6])
+    bounding_box_3d.pose.pose.orientation.x = q[1] 
+    bounding_box_3d.pose.pose.orientation.y = q[2]
+    bounding_box_3d.pose.pose.orientation.z = q[3]
+    bounding_box_3d.pose.pose.orientation.w = q[0]
+
+    bounding_box_3d.l = box[3]
+    bounding_box_3d.w = box[4]
+    bounding_box_3d.h = box[5]
+
     bounding_box_3d.corners_3d = calculate_3d_corners(box)
 
     bounding_box_3d.vel_lin = math.sqrt(pow(box[7],2)+pow(box[8],2))
 
     return bounding_box_3d
 
-def marker_bb(header, box, score, label, id_marker):
-
+def marker_bb(header,box,label,id_marker,corners=False):
+    """
+    If corners = True, visualize the 3D corners instead of a solid cube
+    """
     colors_label = [(0,0,255), (255,255,0), (128,0,0), # car(blue), truck(yellow), construction_vehicle(maroon)
                     (0,128,128), (0,128,0), (0,255,255), # bus(teal), trailer(green), barrier(cyan)
                     (0,255,0), (128,128,128), (255,0,255), (128,0,128)] #motorcycle(lime), bicycle(grey), pedestrian(magenta), traffic_cone(purple)
@@ -59,64 +75,56 @@ def marker_bb(header, box, score, label, id_marker):
     box_marker = Marker()
     box_marker.header.stamp = header.stamp
     box_marker.header.frame_id = header.frame_id
-    box_marker.type = Marker.CUBE
     box_marker.action = Marker.ADD
     box_marker.id = id_marker
-    box_marker.lifetime = rospy.Duration.from_sec(1)
-    box_marker.pose.position.x = box[0]
-    box_marker.pose.position.y = box[1]
-    box_marker.pose.position.z = box[2]
-    box_marker.scale.x = box[3]
-    box_marker.scale.y = box[4]
-    box_marker.scale.z = box[5]
-    quaternion = yaw2quaternion(box[6])
-    box_marker.pose.orientation.x = quaternion[1] 
-    box_marker.pose.orientation.y = quaternion[2]
-    box_marker.pose.orientation.z = quaternion[3]
-    box_marker.pose.orientation.w = quaternion[0]
-    box_marker.color.r, box_marker.color.g, box_marker.color.b = colors_label[label-1]
-    box_marker.color.a = 0.3
+    box_marker.lifetime = rospy.Duration.from_sec(0.1)
+    box_marker.ns = "multihead_obstacles"
 
-    return box_marker
+    if corners:
+        box_marker.type = Marker.POINTS
+        box_marker.scale.x = 0.3
+        box_marker.scale.y = 0.3
+        box_marker.scale.z = 0.3
+        box_marker.pose.orientation.w = 1.0
 
-def new_marker_bb(header, box, score, label, id_marker):
+        corners_3d = calculate_3d_corners(box)
 
-    colors_label = [(0,0,255), (255,255,0), (128,0,0), # car(blue), truck(yellow), construction_vehicle(maroon)
-                    (0,128,128), (0,128,0), (0,255,255), # bus(teal), trailer(green), barrier(cyan)
-                    (0,255,0), (128,128,128), (255,0,255), (128,0,128)] #motorcycle(lime), bicycle(grey), pedestrian(magenta), traffic_cone(purple)
+        for corner in corners_3d:
+            pt = Point()
 
-    box_marker = Marker()
-    box_marker.header.stamp = header.stamp
-    box_marker.header.frame_id = header.frame_id
-    box_marker.type = Marker.POINTS
-    box_marker.action = Marker.ADD
-    box_marker.id = id_marker
-    box_marker.lifetime = rospy.Duration.from_sec(1)
-    box_marker.scale.x = 0.3
-    box_marker.scale.y = 0.3
-    box_marker.scale.z = 0.3
-    box_marker.pose.orientation.w = 1.0
+            pt.x = corner.x
+            pt.y = corner.y
+            pt.z = corner.z
 
-    corners_3d = calculate_3d_corners(box)
+            box_marker.points.append(pt)
 
-    for corner in corners_3d:
-        pt = Point()
+        color_norm = map(lambda x: x/255, colors_label[label-1])
+        box_marker.color.r, box_marker.color.g, box_marker.color.b = color_norm
+        box_marker.color.a = 1.0
 
-        pt.x = corner.x
-        pt.y = corner.y
-        pt.z = corner.z
+        return box_marker
+    else:
+        box_marker.type = Marker.CUBE
+        box_marker.pose.position.x = box[0]
+        box_marker.pose.position.y = box[1]
+        box_marker.pose.position.z = box[2]
+        q = yaw2quaternion(box[6])
+        box_marker.pose.orientation.x = q[1] 
+        box_marker.pose.orientation.y = q[2]
+        box_marker.pose.orientation.z = q[3]
+        box_marker.pose.orientation.w = q[0]
+        box_marker.scale.x = box[3]
+        box_marker.scale.y = box[4]
+        box_marker.scale.z = box[5]
+        color_norm = map(lambda x: x/255, colors_label[label-1])
+        box_marker.color.r, box_marker.color.g, box_marker.color.b = color_norm
+        box_marker.color.a = 0.5
 
-        box_marker.points.append(pt)
+        return box_marker
 
-    # color_norm = x/255 for x in colors_label[label-1]
-    color_norm = map(lambda x: x/255, colors_label[label-1])
-    box_marker.color.r, box_marker.color.g, box_marker.color.b = color_norm
-    box_marker.color.a = 1.0
-
-    return box_marker
-
-def marker_arrow(header, box, score, label, id_marker):
-
+def marker_arrow(header, box, label, id_marker):
+    """
+    """
     arrow_marker = Marker()
     arrow_marker.header.stamp = header.stamp
     arrow_marker.header.frame_id = header.frame_id
@@ -124,6 +132,7 @@ def marker_arrow(header, box, score, label, id_marker):
     arrow_marker.action = Marker.ADD
     arrow_marker.id = id_marker
     arrow_marker.lifetime = rospy.Duration.from_sec(1)
+    arrow_marker.ns = "multihead_velocities"
     arrow_marker.color.r = 255
     arrow_marker.color.g = 255
     arrow_marker.color.b = 255
