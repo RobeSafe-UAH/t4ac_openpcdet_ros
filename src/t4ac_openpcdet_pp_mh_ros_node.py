@@ -148,22 +148,3 @@ def main():
 if __name__ == '__main__':
     print("[+] PCDet ros_node has started.")    
     main()
-
-
-
-
-
-
-
-    
-
-    
-
-    
-
-
-    
-
-    
-
-    

@@ -156,11 +156,8 @@ def filter_predictions(pred_dicts, simulation):
 
 def relative2absolute_velocity(pred_boxes, msg_odometry):
 
-    # pred_boxes[:,7] += msg_odometry.twist.twist.linear.x * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6])
-    # pred_boxes[:,8] += msg_odometry.twist.twist.linear.y #* np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6])
     pred_boxes[:,7] += msg_odometry.twist.twist.linear.x
-    # pred_boxes[:,7] += msg_odometry.twist.twist.linear.y
-    print(pred_boxes[:,7])
+    # print(pred_boxes[:,7])
 
     return pred_boxes
 
