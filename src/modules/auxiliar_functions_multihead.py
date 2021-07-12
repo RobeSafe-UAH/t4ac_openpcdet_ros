@@ -203,19 +203,12 @@ def filter_predictions(pred_dicts, simulation):
 
     return pred_boxes, pred_scores, pred_labels
 
-# def relative2absolute_velocity(pred_boxes, ego_vel_x_local, ego_vel_y_local):
+def relative2absolute_velocity(pred_boxes, ego_vel_x_local, ego_vel_y_local):
 
-<<<<<<< HEAD
     pred_boxes[:,7] += msg_odometry.twist.twist.linear.x
-    # print(pred_boxes[:,7])
-=======
-#     # pred_boxes[:,7] += msg_odometry.twist.twist.linear.x * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6])
-#     # pred_boxes[:,8] += msg_odometry.twist.twist.linear.y #* np.vectorize((lambda x: math.cos(x)))(pred_boxes[:,6]) - msg_odometry.twist.twist.linear.y * np.vectorize((lambda x: math.sin(x)))(pred_boxes[:,6])
-#     pred_boxes[:,7] += ego_vel_x_local
-#     pred_boxes[:,8] += ego_vel_y_local
+    pred_boxes[:,7] += ego_vel_x_local
 
-#     return pred_boxes
->>>>>>> 32a9a9221081a977ba0a5111e49de208ac06af08
+    return pred_boxes
 
 def relative2absolute_velocity(pred_boxes, msg_odometry):
     pred_boxes[:,7] += msg_odometry.twist.twist.linear.x
