@@ -124,7 +124,8 @@ def main():
                 if(i < len(row)-1):
                     f.write(',')
 
-            f.write("\n")
+            if len_pred_boxes != 0:
+                f.write("\n")
             frame += 1
 
 if __name__ == '__main__':
