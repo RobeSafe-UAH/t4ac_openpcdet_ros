@@ -28,6 +28,9 @@ class Processor_ROS_nuScenes:
         self.model = None
         self.demo_dataset = None
         self.actual_time = 0
+        self.current_ego_odometry = None
+        self.previous_ego_odometry = None
+        self.odom_flag = False
 
     def initilize_network(self):
 

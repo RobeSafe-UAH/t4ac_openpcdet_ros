@@ -22,13 +22,14 @@
 
         <param name="pub_3D_lidar_obstacles" type="string" value="$(arg t4ac_openpcdet_ros_node)/3D_lidar_obstacles"/>
         <param name="pub_3D_lidar_obstacles_markers" type="string" value="$(arg t4ac_openpcdet_ros_node)/3D_lidar_obstacles_markers"/>
-
-        <param name="sub_input_odometry" type="string" value="/carla/ego_vehicle/odometry"/>
+        <param name="pub_3D_lidar_obstacles_velocities_markers" type="string" value="$(arg t4ac_openpcdet_ros_node)/3D_lidar_obstacles_velocities_markers"/>
 
         <group if="$(eval simulation == true)">
+            <param name="sub_input_odometry" type="string" value="/carla/ego_vehicle/odometry"/>
             <param name="sub_input_pointcloud" type="string" value="/carla/ego_vehicle/lidar/lidar1/point_cloud"/>
         </group>
         <group if="$(eval simulation == false)">
+            <param name="sub_input_odometry" type="string" value="/t4ac/localization/pose"/>
             <param name="sub_input_pointcloud" type="string" value="$(arg t4ac_sensors_synchro_ros_node)/synchronized_pointcloud"/>
             <group if="$(eval lidar_camera_fusion == false)">
                 <param name="sub_input_pointcloud" type="string" value="/velodyne_points"/>
