@@ -81,8 +81,9 @@ def main():
 
     # Create CSV
     with open(args.csv_lidar, 'a') as f:
-        f.write("timestamp,id,type,alpha,left,top,right,bottom,l,w,h,x,y,z,rotation_z,vx,vy,vz\n")
+        f.write("frame,timestamp,id,type,alpha,left,top,right,bottom,l,w,h,x,y,z,rotation_z,vx,vy,vz,score\n")
 
+        frame = 0
         # Infinite loop to process the PCLs
         for bin_file, timestamp in zip(sorted(glob.glob(args.bin_files + '/*.bin')), time_stamps):
             timestamp = float(timestamp[:len(timestamp)-2])
@@ -91,7 +92,7 @@ def main():
             pred_boxes, pred_scores, pred_labels = filter_predictions(pred_dicts, True)
 
             # Get row values
-            common_row = [str(timestamp),'-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1']
+            common_row = [str(frame),str(timestamp),'-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1']
             len_pred_boxes = len(pred_boxes)
             row = []
             for i in range(len_pred_boxes):
@@ -99,20 +100,23 @@ def main():
 
                 # Get the label
                 if (pred_labels[i] != 9):
-                    row[2] = str('Car')
+                    row[3] = str('Car')
                 else:
-                    row[2] = str('Pedestrian')
+                    row[3] = str('Pedestrian')
 
                 # Get the bounding box
-                row[8] = pred_boxes[i][3]
-                row[9] = pred_boxes[i][5]
-                row[10] = pred_boxes[i][4]
-                row[11] = pred_boxes[i][0]
-                row[12] = pred_boxes[i][1]
-                row[13] = pred_boxes[i][2]
-                row[14] = pred_boxes[i][6]
-                row[15] = pred_boxes[i][7]
-                row[16] = pred_boxes[i][8]
+                row[9] = pred_boxes[i][3]
+                row[10] = pred_boxes[i][5]
+                row[11] = pred_boxes[i][4]
+                row[12] = pred_boxes[i][0]
+                row[13] = pred_boxes[i][1]
+                row[14] = pred_boxes[i][2]
+                row[15] = pred_boxes[i][6]
+                row[16] = pred_boxes[i][7]
+                row[17] = pred_boxes[i][8]
+
+                # Get score
+                row[19] = pred_scores[i]
             
             # Write the row
             for i in range(len(row)):
@@ -121,6 +125,7 @@ def main():
                     f.write(',')
 
             f.write("\n")
+            frame += 1
 
 if __name__ == '__main__':
 
