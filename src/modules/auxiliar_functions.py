@@ -115,16 +115,16 @@ def remove_low_score_nu(image_anno, thresh):
     label_preds_ = image_anno["label_preds"].detach().cpu().numpy()
     scores_ = image_anno["scores"].detach().cpu().numpy()
     
-    car_indices =                  get_annotations_indices(0, 0.45, label_preds_, scores_)
-    truck_indices =                get_annotations_indices(1, 0.45, label_preds_, scores_)
-    construction_vehicle_indices = get_annotations_indices(2, 0.45, label_preds_, scores_)
+    car_indices =                  get_annotations_indices(0, 0.5, label_preds_, scores_)
+    truck_indices =                get_annotations_indices(1, 0.5, label_preds_, scores_)
+    construction_vehicle_indices = get_annotations_indices(2, 0.55, label_preds_, scores_)
     bus_indices =                  get_annotations_indices(3, 0.35, label_preds_, scores_)
     trailer_indices =              get_annotations_indices(4, 0.4, label_preds_, scores_)
-    barrier_indices =              get_annotations_indices(5, 0.4, label_preds_, scores_)
-    motorcycle_indices =           get_annotations_indices(6, 0.15, label_preds_, scores_)
-    bicycle_indices =              get_annotations_indices(7, 0.15, label_preds_, scores_)
-    pedestrain_indices =           get_annotations_indices(8, 0.10, label_preds_, scores_)
-    traffic_cone_indices =         get_annotations_indices(9, 0.1, label_preds_, scores_)
+    barrier_indices =              get_annotations_indices(5, 0.55, label_preds_, scores_)
+    motorcycle_indices =           get_annotations_indices(6, 0.2, label_preds_, scores_)
+    bicycle_indices =              get_annotations_indices(7, 0.2, label_preds_, scores_)
+    pedestrain_indices =           get_annotations_indices(8, 0.05, label_preds_, scores_)
+    traffic_cone_indices =         get_annotations_indices(9, 0.15, label_preds_, scores_)
     
     for key in image_anno.keys():
         if key == 'metadata':

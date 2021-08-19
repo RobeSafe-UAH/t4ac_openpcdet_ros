@@ -13,8 +13,6 @@ from functools import wraps
 import numpy as np
 import os
 
-from modules.auxiliar_functions_multihead import filter_predictions
-
 def add_method(cls):
     def decorator(func):
         @wraps(func)
@@ -89,7 +87,9 @@ def main():
             timestamp = float(timestamp[:len(timestamp)-2])
             processor.new_pcl(bin_file, timestamp)
             pred_dicts = processor.inference()
-            pred_boxes, pred_scores, pred_labels = filter_predictions(pred_dicts, True)
+            pred_boxes, pred_scores, pred_labels = (pred_dicts[0]['pred_boxes'].cpu().detach().numpy(),
+                                                    pred_dicts[0]['pred_scores'].cpu().detach().numpy(),
+                                                    pred_dicts[0]['pred_labels'].cpu().detach().numpy())
 
             # Get row values
             common_row = [str(frame),str(timestamp),'-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1','-1']
@@ -99,6 +99,8 @@ def main():
                 row = list(common_row)
 
                 # Get the label
+                if (pred_labels[i] == 6 or pred_labels[i] == 10):
+                    continue
                 if (pred_labels[i] != 9):
                     row[3] = str('Car')
                 else:
@@ -118,14 +120,14 @@ def main():
                 # Get score
                 row[19] = pred_scores[i]
             
-            # Write the row
-            for i in range(len(row)):
-                f.write(str(row[i]))
-                if(i < len(row)-1):
-                    f.write(',')
+                # Write the row
+                for i in range(len(row)):
+                    f.write(str(row[i]))
+                    if(i < len(row)-1):
+                        f.write(',')
 
-            if len_pred_boxes != 0:
-                f.write("\n")
+                if len_pred_boxes != 0:
+                    f.write("\n")
             frame += 1
 
 if __name__ == '__main__':
